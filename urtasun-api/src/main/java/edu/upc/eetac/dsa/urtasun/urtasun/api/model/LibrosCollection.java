@@ -37,6 +37,10 @@ public void setLinks(List<Link> links) {
 	this.links = links;
 }
 
+public void addLibros(Libros libro){
+	libros.add(libro);
+}
+
 public List<Libros> getLibros() {
 	return libros;
 }

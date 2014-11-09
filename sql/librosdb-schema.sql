@@ -20,13 +20,24 @@ create table autor (
 	id 		int not null auto_increment primary key,
 	name	varchar(70) not null
 );
+
 create table libros (
 	libroid 			int not null auto_increment primary key,
 	title 				varchar(50) not null,
 	idAuthor			int not null,
 	language			varchar(50) not null,
+	edition				varchar(10) not null,
 	editorial			varchar(50) not null,
 	dateImpresion		timestamp default current_timestamp ON UPDATE CURRENT_TIMESTAMP,
 	dateCreation		datetime not null default current_timestamp,
 	foreign key(idauthor) 	references autor(id)
+);
+create table review (
+	idreview		int not null auto_increment primary key,
+	idlibro			int not null,
+	username		varchar(20),
+	name			varchar(70),
+	lastmodified	timestamp default current_timestamp ON UPDATE CURRENT_TIMESTAMP,
+	review			varchar(5000),
+	foreign key(idreview) 	references libros(libroid)
 );

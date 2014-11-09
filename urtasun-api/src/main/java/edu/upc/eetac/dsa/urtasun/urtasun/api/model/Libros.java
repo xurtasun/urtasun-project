@@ -8,6 +8,7 @@ public class Libros {
 	
 	private int libroid;
 	private String title;
+	private int idautor;
 	private String autor;
 	private String language;
 	private String edition;
@@ -15,7 +16,6 @@ public class Libros {
 	private long dateImpresion;
 	private String Editorial;
 	private List<Link> links;
-	
 	public int getLibroid() {
 		return libroid;
 	}
@@ -27,6 +27,12 @@ public class Libros {
 	}
 	public void setTitle(String title) {
 		this.title = title;
+	}
+	public int getIdautor() {
+		return idautor;
+	}
+	public void setIdautor(int idautor) {
+		this.idautor = idautor;
 	}
 	public String getAutor() {
 		return autor;
@@ -70,8 +76,7 @@ public class Libros {
 	public void setLinks(List<Link> links) {
 		this.links = links;
 	}
-	
-	
+
 
 
 
