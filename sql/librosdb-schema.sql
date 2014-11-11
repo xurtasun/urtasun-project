@@ -18,7 +18,8 @@ create table user_roles (
 );
 create table autor (
 	id 		int not null auto_increment primary key,
-	name	varchar(70) not null
+	name	varchar(70) not null,
+	foreign key(name) 	references users(username)
 );
 
 create table libros (
@@ -38,6 +39,6 @@ create table review (
 	username		varchar(20),
 	name			varchar(70),
 	lastmodified	timestamp default current_timestamp ON UPDATE CURRENT_TIMESTAMP,
-	review			varchar(5000),
+	reviewtext			varchar(5000),
 	foreign key(idreview) 	references libros(libroid)
 );

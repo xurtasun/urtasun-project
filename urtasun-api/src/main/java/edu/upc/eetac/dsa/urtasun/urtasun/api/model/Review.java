@@ -3,24 +3,22 @@ package edu.upc.eetac.dsa.urtasun.urtasun.api.model;
 public class Review {
 	
 	private int idReview;
-	private String review;
+	private String reviewtext;
 	private String usernameReviewer;
 	private String nameReviewer;
 	private long lastModified;
 	private int idLibro;
-	
-	
 	public int getIdReview() {
 		return idReview;
 	}
 	public void setIdReview(int idReview) {
 		this.idReview = idReview;
 	}
-	public String getReview() {
-		return review;
+	public String getReviewtext() {
+		return reviewtext;
 	}
-	public void setReview(String review) {
-		this.review = review;
+	public void setReviewtext(String reviewtext) {
+		this.reviewtext = reviewtext;
 	}
 	public String getUsernameReviewer() {
 		return usernameReviewer;
@@ -46,6 +44,4 @@ public class Review {
 	public void setIdLibro(int idLibro) {
 		this.idLibro = idLibro;
 	}
-	
-
 }

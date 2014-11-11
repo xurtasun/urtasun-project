@@ -199,7 +199,7 @@ public class LibrosResource {
 	@Path("/{libroid}")
 	@Consumes(MediaType.URTASUN_API_LIBROS)
 	@Produces(MediaType.URTASUN_API_LIBROS)
-	public Libros updateSting(@PathParam("libroid") String idlibro, Libros libro) { // UPDATE
+	public Libros updateLibro(@PathParam("libroid") String idlibro, Libros libro) { // UPDATE
 		validateAdmin();
 		System.out.println("Actualizando Libro....");
 
@@ -251,7 +251,7 @@ public class LibrosResource {
 
 	@DELETE
 	@Path("/{libroid}")
-	public void deleteAuthor(@PathParam("libroid") String idlibro) { // DELETE
+	public void deleteLibro(@PathParam("libroid") String idlibro) { // DELETE
 		validateAdmin();
 		System.out.println("Borrando Libro....");
 		Connection conn = null;
@@ -289,7 +289,7 @@ public class LibrosResource {
 	}
 	
 	
-	private String GET_LIBRO_BY_ID_QUERY = "select * from libros where libroid=?";
+	private String GET_LIBRO_BY_ID_QUERY = "select lib.*,aut.name from libros lib, autor aut where lib.idAuthor=aut.id and libroid=?";
 
 	private Libros getLibroFromDatabase(String idlibro) { // GET AUTHOR DATABASE
 
@@ -309,6 +309,7 @@ public class LibrosResource {
 			stmt.setInt(1, Integer.valueOf(idlibro));
 			ResultSet rs = stmt.executeQuery();
 			if (rs.next()) {
+				libro.setAutor(rs.getString("name"));
 				libro.setLibroid(rs.getInt("libroid"));
 				libro.setIdautor(rs.getInt("idAuthor"));
 				libro.setDateCreation(rs.getLong("DateCreation"));
@@ -336,9 +337,10 @@ public class LibrosResource {
 	
 	private void validateAdmin() { // VALIDATE ADMIN
 		if (!security.isUserInRole("administrator"))
-			throw new ForbiddenException("This fucntion is only for admins.");
+			throw new ForbiddenException("This function is only for admins.");
 
 	}
+	
 	
 	
 	/*
@@ -346,10 +348,10 @@ public class LibrosResource {
 	 * -------------------------------------------
 	 */
 	
-	String INSERT_REVIEW_QUERY = "insert into review(idlibro,username,name,review) values (?,?,?,?)";
+	String INSERT_REVIEW_QUERY = "insert into review(idlibro,username,name,reviewtext) values (?,?,?,?)";
 	
 	@POST
-	@Path("/{libroid}/review")
+	@Path("/review/{libroid}")
 	@Consumes(MediaType.URTASUN_API_LIBROS)
 	@Produces(MediaType.URTASUN_API_LIBROS)
 	public Review createReview( @PathParam ("libroid") String idlibro, Review review) { // CREATE REVIEW
@@ -357,8 +359,8 @@ public class LibrosResource {
 		System.out.println("libroid..."+idlibro);
 		System.out.println("username "+review.getUsernameReviewer());
 		System.out.println("name "+review.getNameReviewer());
-		System.out.println("reseña "+review.getReview());
-		
+		System.out.println("reseña "+review.getReviewtext());
+		validateUserOfBook(idlibro);
 		boolean turn = validateOnetimePerUser(review.getUsernameReviewer(), review.getIdLibro());
 		Connection conn = null;
 		try {
@@ -378,7 +380,7 @@ public class LibrosResource {
 					stmt.setString(1, idlibro);
 					stmt.setString(2, review.getUsernameReviewer());
 					stmt.setString(3, review.getNameReviewer());
-					stmt.setString(4, review.getReview());
+					stmt.setString(4, review.getReviewtext());
 					
 					stmt.executeUpdate();
 					ResultSet rs = stmt.getGeneratedKeys();
@@ -402,18 +404,15 @@ public class LibrosResource {
 		return review;
 	}
 	
-	
-	
-	
-	private String UPDATE_REVIEW_QUERY = "update review set review=ifnull(?, review) where idreview=?";
+	private String UPDATE_REVIEW_QUERY = "update review set reviewtext=ifnull(?, reviewtext) where idreview=?";
 
 	@PUT
-	@Path("/{libroid}/review")
+	@Path("/review/{libroid}/{reviewid}")
 	@Consumes(MediaType.URTASUN_API_LIBROS)
 	@Produces(MediaType.URTASUN_API_LIBROS)
-	public Review updatereview(@PathParam("libroid") String idlibro, Review review) { // UPDATE
+	public Review updatereview(@PathParam("libroid") String idlibro, @PathParam("reviewid") String idReview, Review Review) { // UPDATE
 		System.out.println("Actualizando Review....");
-
+		validateUserOfBook(idlibro);
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
@@ -426,15 +425,15 @@ public class LibrosResource {
 		PreparedStatement stmt = null;
 		try {
 			stmt = conn.prepareStatement(UPDATE_REVIEW_QUERY);
-			stmt.setString(1, review.getReview());
-			stmt.setInt(2, review.getIdReview());
+			stmt.setString(1, Review.getReviewtext());
+			stmt.setInt(2, Integer.valueOf(idReview));
 
 			
 
 			int rows = stmt.executeUpdate();
 			if (rows == 1){
-				review = getReviewFromDatabase(idlibro);
-				System.out.println("Reseña con id: "+ review.getIdReview() +" ha sido actualizada.");
+				Review = getReviewFromDatabase(idReview);
+				System.out.println("Reseña con id: "+ Review.getIdReview() +" ha sido actualizada.");
 			}
 			
 			else {
@@ -454,16 +453,19 @@ public class LibrosResource {
 			}
 		}
 
-		return review;
+		return Review;
 	}
 	
 	
 	private String DELETE_REVIEW_QUERY = "delete from review where idreview=?";
 
 	@DELETE
-	@Path("/{libroid}/review")
-	public void deleteReview(@PathParam("libroid") String idlibro) { // DELETE
+	@Path("/review/{libroid}/{reviewid}")
+	public void deleteReview(@PathParam("libroid") String idlibro, @PathParam("reviewid") String idReview) { // DELETE
 		System.out.println("Borrando Libro....");
+		
+		validateUserOfBook(idlibro);
+			
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
@@ -498,11 +500,9 @@ public class LibrosResource {
 		}
 	}
 	
-	
-	
 	private String GET_REVIEW_BY_IDLIBRO = "select * from review where idlibro=?";
 
-	private Review getReviewFromDatabase(String idlibro) { // GET AUTHOR DATABASE
+	private Review getReviewFromDatabase(String idReview) { // GET AUTHOR DATABASE
 
 		Review review = new Review();
 
@@ -517,14 +517,14 @@ public class LibrosResource {
 		PreparedStatement stmt = null;
 		try {
 			stmt = conn.prepareStatement(GET_REVIEW_BY_IDLIBRO);
-			stmt.setInt(1, Integer.valueOf(idlibro));
+			stmt.setInt(1, Integer.valueOf(idReview));
 			ResultSet rs = stmt.executeQuery();
 			if (rs.next()) {
 				review.setIdReview(rs.getInt("idreview"));
 				review.setIdLibro(rs.getInt("idlibro"));
 				review.setUsernameReviewer(rs.getString("username"));
 				review.setNameReviewer(rs.getString("name"));
-				review.setReview(rs.getString("review"));
+				review.setReviewtext(rs.getString("reviewtext"));
 				review.setLastModified(rs.getTimestamp("lastmodified").getTime());
 			}
 		} catch (SQLException e) {
@@ -584,325 +584,15 @@ public class LibrosResource {
 		}
 		return turn;		
 	}
-	
-	
-	/*
-	private String GET_STINGS_QUERY_SUBJECT = " select s.*, u.name from stings s, users u where u.username=s.username and s.subject=? and s.content=?";
-	
-	@GET
-	@Path("/search")
-	@Produces(MediaType.BEETER_API_STING_COLLECTION)
-	public StingCollection getStingsParametros(@QueryParam("subject") String subject,
-			@QueryParam("content") String content, @QueryParam ("lenght") int length) {
-		StingCollection stings = new StingCollection();
 
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			throw new ServerErrorException("Could not connect to the database",
-					Response.Status.SERVICE_UNAVAILABLE);
-		}
-		
-		System.out.println(subject);
-		System.out.println("creamos statment");
-		PreparedStatement stmt = null;
-		
-		try{
-			if (subject!= null){
-				try {
-					
-					stmt = conn.prepareStatement(GET_STINGS_QUERY_SUBJECT);
-					
-					stmt.setString(1, subject);
-					stmt.setString(2, content);
-					System.out.println("ejecutando Query--->" + stmt);
-					ResultSet rs = stmt.executeQuery();
-					boolean first = true;
-					long oldestTimestamp = 0;
-					int i=0;
-					while(rs.next() && i< length){
-						
-						Sting sting = new Sting();
-						
-						sting.setStingid(rs.getInt("stingid"));
-						System.out.println(sting.getStingid());
-						sting.setUsername(rs.getString("username"));
-						sting.setAuthor(rs.getString("name"));
-						sting.setSubject(rs.getString("subject"));
-						oldestTimestamp = rs.getTimestamp("last_modified").getTime();
-						sting.setLastModified(oldestTimestamp);
-						if (first) {
-							first = false;
-							stings.setNewestTimestamp(sting.getLastModified());
-						}
-						stings.addSting(sting);
-						i++;
-					}
-							
-					
-				}
-				catch (SQLException e) {
-					throw new ServerErrorException(e.getMessage(),
-							Response.Status.INTERNAL_SERVER_ERROR);
-				} 
-			}
-		}finally {
-					try {
-						if (stmt != null)
-							stmt.close();
-						conn.close();
-					} catch (SQLException e) {
-					}
-				}
-		
-
-		return stings;
-	}
-		
-
-	
-	
-	
-	private String GET_STING_BY_ID_QUERY = "select s.*, u.name from stings s, users u where u.username=s.username and s.stingid=?";
-
-	private Sting getStingFromDatabase(String stingid) {
-		Sting sting = new Sting();
-
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			throw new ServerErrorException("Could not connect to the database",
-					Response.Status.SERVICE_UNAVAILABLE);
-		}
-
-		PreparedStatement stmt = null;
-		try {
-			stmt = conn.prepareStatement(GET_STING_BY_ID_QUERY);
-			stmt.setInt(1, Integer.valueOf(stingid));
-			ResultSet rs = stmt.executeQuery();
-			if (rs.next()) {
-				sting.setStingid(rs.getInt("stingid"));
-				sting.setUsername(rs.getString("username"));
-				sting.setAuthor(rs.getString("name"));
-				sting.setSubject(rs.getString("subject"));
-				sting.setContent(rs.getString("content"));
-				sting.setLastModified(rs.getTimestamp("last_modified")
-						.getTime());
-				sting.setCreationTimestamp(rs
-						.getTimestamp("creation_timestamp").getTime());
-			} else {
-			throw new NotFoundException("There's no sting with stingid="
-			+ stingid);
-			}
-		} catch (SQLException e) {
-			throw new ServerErrorException(e.getMessage(),
-					Response.Status.INTERNAL_SERVER_ERROR);
-		}finally {
-			try {
-				if (stmt != null)
-					stmt.close();
-				conn.close();
-			} catch (SQLException e) {
-			}
-		}
-
-		return sting;
-	}
-	
-	@GET
-	@Path("/{stingid}")
-	@Produces(MediaType.BEETER_API_STING)
-	public Response getSting(@PathParam("stingid") String stingid, @Context Request request) {
-		// Create CacheControl
-		CacheControl cc = new CacheControl();
-
-		Sting sting = getStingFromDatabase(stingid);
-
-		// Calculate the ETag on last modified date of user resource
-		EntityTag eTag = new EntityTag(Long.toString(sting.getLastModified()));
-
-		// Verify if it matched with etag available in http request
-		Response.ResponseBuilder rb = request.evaluatePreconditions(eTag);
-
-		// If ETag matches the rb will be non-null;
-		// Use the rb to return the response without any further processing
-		if (rb != null) {
-			return rb.cacheControl(cc).tag(eTag).build();
-		}
-
-		// If rb is null then either it is first time request; or resource is
-		// modified
-		// Get the updated representation and return with Etag attached to it
-		rb = Response.ok(sting).cacheControl(cc).tag(eTag);
-
-		return rb.build();
-	}
-	
-	
-	private String INSERT_STING_QUERY = "insert into stings (username, subject, content) value (?, ?, ?)";
-
-	@POST
-	@Consumes(MediaType.BEETER_API_STING)
-	@Produces(MediaType.BEETER_API_STING)
-	public Sting createSting(Sting sting) {
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			throw new ServerErrorException("Could not connect to the database",
-					Response.Status.SERVICE_UNAVAILABLE);
-		}
-		
-		
-		validateSting(sting);
-		PreparedStatement stmt = null;
-		try {
-			stmt = conn.prepareStatement(INSERT_STING_QUERY,
-					Statement.RETURN_GENERATED_KEYS);
-
-			//stmt.setString(1, sting.getUsername());
-			stmt.setString(1, security.getUserPrincipal().getName());
-			stmt.setString(2, sting.getSubject());
-			stmt.setString(3, sting.getContent());
-			stmt.executeUpdate();
-			ResultSet rs = stmt.getGeneratedKeys();
-			if (rs.next()) {
-				int stingid = rs.getInt(1);
-
-				sting = getStingFromDatabase(Integer.toString(stingid));
-			} else {
-				// Something has failed...
-			}
-		} catch (SQLException e) {
-			throw new ServerErrorException(e.getMessage(),
-					Response.Status.INTERNAL_SERVER_ERROR);
-		}finally {
-			try {
-				if (stmt != null)
-					stmt.close();
-				conn.close();
-			} catch (SQLException e) {
-			}
-		}
-
-		return sting;
-	}
-	
-	private String DELETE_STING_QUERY = "delete from stings where stingid=?";
-
-	@DELETE
-	@Path("/{stingid}")
-	public void deleteSting(@PathParam("stingid") String stingid) {
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			throw new ServerErrorException("Could not connect to the database",
-					Response.Status.SERVICE_UNAVAILABLE);
-		}
-		validateUser(stingid);
-		PreparedStatement stmt = null;
-		try {
-			stmt = conn.prepareStatement(DELETE_STING_QUERY);
-			stmt.setInt(1, Integer.valueOf(stingid));
-
-			int rows = stmt.executeUpdate();
-			if (rows == 0)
-				;// Deleting inexistent sting
-		} catch (SQLException e) {
-			throw new ServerErrorException(e.getMessage(),
-					Response.Status.INTERNAL_SERVER_ERROR);
-		}finally {
-			try {
-				if (stmt != null)
-					stmt.close();
-				conn.close();
-			} catch (SQLException e) {
-			}
-		}
-	}
-	
-	private String UPDATE_STING_QUERY = "update stings set subject=ifnull(?, subject), content=ifnull(?, content) where stingid=?";
-
-	@PUT
-	@Path("/{stingid}")
-	@Consumes(MediaType.BEETER_API_STING)
-	@Produces(MediaType.BEETER_API_STING)
-	public Sting updateSting(@PathParam("stingid") String stingid, Sting sting) {
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			throw new ServerErrorException("Could not connect to the database",
-					Response.Status.SERVICE_UNAVAILABLE);
-		}
-		validateUpdateSting(sting);
-		validateUser(stingid);
-		PreparedStatement stmt = null;
-		try {
-			stmt = conn.prepareStatement(UPDATE_STING_QUERY);
-			stmt.setString(1, sting.getSubject());
-			stmt.setString(2, sting.getContent());
-			stmt.setInt(3, Integer.valueOf(stingid));
-
-			int rows = stmt.executeUpdate();
-			if (rows == 1)
-				sting = getStingFromDatabase(stingid);
-			else {
-				throw new NotFoundException("There's no sting with stingid="
-						+ stingid);
-			}
-
-		} catch (SQLException e) {
-			throw new ServerErrorException(e.getMessage(),
-					Response.Status.INTERNAL_SERVER_ERROR);
-		}finally {
-			try {
-				if (stmt != null)
-					stmt.close();
-				conn.close();
-			} catch (SQLException e) {
-			}
-		}
-
-		return sting;
-		}
-	
-	@POST
-	@Consumes(MediaType.BEETER_API_STING)
-	@Produces(MediaType.BEETER_API_STING)
-	private void validateSting(Sting sting) {
-		if (sting.getSubject() == null)
-			throw new BadRequestException("Subject can't be null.");
-		if (sting.getContent() == null)
-			throw new BadRequestException("Content can't be null.");
-		if (sting.getSubject().length() > 100)
-			throw new BadRequestException("Subject can't be greater than 100 characters.");
-		if (sting.getContent().length() > 500)
-			throw new BadRequestException("Content can't be greater than 500 characters.");
-	}
-	
-	private void validateUpdateSting(Sting sting) {
-		if (sting.getSubject() != null && sting.getSubject().length() > 100)
-			throw new BadRequestException(
-					"Subject can't be greater than 100 characters.");
-		if (sting.getContent() != null && sting.getContent().length() > 500)
-			throw new BadRequestException(
-					"Content can't be greater than 500 characters.");
-	}
-	
-	private void validateUser(String stingid) {
-	    Sting sting = getStingFromDatabase(stingid);
-	    String username = sting.getUsername();
-		if (!security.getUserPrincipal().getName()
-				.equals(username))
+	private void validateUserOfBook(String idLibro){
+		Libros libro = getLibroFromDatabase(idLibro);
+	    String autorlibro = libro.getAutor();
+	    System.out.println("id -->"+idLibro+"comparo "+ autorlibro +" y "+ security.getUserPrincipal().getName());
+	    		if (!security.getUserPrincipal().getName()
+				.equals(autorlibro))
 			throw new ForbiddenException(
-					"You are not allowed to modify this sting.");
+					"No eres el autor de este libro.");
+		
 	}
-	*/
 }
-
-
-
