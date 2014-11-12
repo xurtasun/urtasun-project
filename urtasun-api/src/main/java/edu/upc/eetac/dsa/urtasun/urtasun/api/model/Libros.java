@@ -4,8 +4,22 @@ import java.util.List;
 
 import javax.ws.rs.core.Link;
 
+import org.glassfish.jersey.linking.Binding;
+import org.glassfish.jersey.linking.InjectLink;
+import org.glassfish.jersey.linking.InjectLinks;
+import org.glassfish.jersey.linking.InjectLink.Style;
+
+import edu.upc.eetac.dsa.urtasun.urtasun.api.LibrosResource;
+import edu.upc.eetac.dsa.urtasun.urtasun.api.MediaType;
+
+
+
 public class Libros {
 	
+	@InjectLinks({
+		@InjectLink(resource = LibrosResource.class, style = Style.ABSOLUTE, rel = "libros", title = "Consulta ultimos libros", type = MediaType.URTASUN_API_LIBROS_COLLECTION),
+		@InjectLink(resource = LibrosResource.class, style = Style.ABSOLUTE, rel = "self edit", title = "Accede a este libro", type = MediaType.URTASUN_API_LIBROS, method = "getLibro", bindings = @Binding(name = "libroid", value = "${instance.libroid}")) })
+	private List<Link> links;
 	private int libroid;
 	private String title;
 	private int idautor;
@@ -15,7 +29,6 @@ public class Libros {
 	private long dateCreation;
 	private long dateImpresion;
 	private String Editorial;
-	private List<Link> links;
 	public int getLibroid() {
 		return libroid;
 	}
