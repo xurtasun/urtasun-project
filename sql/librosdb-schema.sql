@@ -33,6 +33,7 @@ create table libros (
 	dateCreation		datetime not null default current_timestamp,
 	foreign key(idauthor) 	references autor(id)
 );
+
 create table review (
 	idreview		int not null auto_increment primary key,
 	idlibro			int not null,

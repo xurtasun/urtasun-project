@@ -1,6 +1,5 @@
 package edu.upc.eetac.dsa.urtasun.urtasun.api;
 
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,6 +28,8 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
+import org.apache.commons.codec.digest.DigestUtils;
+
 import edu.upc.eetac.dsa.urtasun.urtasun.api.model.Author;
 import edu.upc.eetac.dsa.urtasun.urtasun.api.model.Libros;
 import edu.upc.eetac.dsa.urtasun.urtasun.api.model.LibrosCollection;
@@ -36,25 +37,23 @@ import edu.upc.eetac.dsa.urtasun.urtasun.api.model.Review;
 
 @Path("/libros")
 public class LibrosResource {
-	
+
 	@Context
 	private SecurityContext security;
-	
+
 	private DataSource ds = DataSourceSPA.getInstance().getDataSource();
-	
-	
-	
+
 	/*
-	 * LIBROS
-	 * -------------------------------------------
+	 * LIBROS -------------------------------------------
 	 */
-	
-	
+
 	private String GET_LIBROS_QUERY = "select lib.*, aut.name from libros lib, autor aut where lib.idAuthor=aut.id and lib.dateCreation < ifnull(?, now())  order by dateCreation desc limit ?";
 	private String GET_LIBROS_QUERY_FROM_LAST = "select lib.*, aut.name from libros lib, autor aut where lib.idAuthor=aut.id and lib.dateCreation > ? order by dateCreation desc";
+
 	@GET
 	@Produces(MediaType.URTASUN_API_LIBROS_COLLECTION)
-	public LibrosCollection getLibros(@QueryParam("length") int length,@QueryParam("before") long before, @QueryParam("after") long after) {
+	public LibrosCollection getLibros(@QueryParam("length") int length,
+			@QueryParam("before") long before, @QueryParam("after") long after) {
 		LibrosCollection libros = new LibrosCollection();
 
 		Connection conn = null;
@@ -78,7 +77,9 @@ public class LibrosResource {
 					stmt.setTimestamp(1, new Timestamp(before));
 				else
 					stmt.setTimestamp(1, null);
-				length = (length <= 0) ? 5 : length;// si lenght menor a 0 coge valor a 5 sino coge valor por defecto de lenght
+				length = (length <= 0) ? 5 : length;// si lenght menor a 0 coge
+													// valor a 5 sino coge valor
+													// por defecto de lenght
 				stmt.setInt(2, length);
 			}
 			ResultSet rs = stmt.executeQuery();
@@ -117,19 +118,21 @@ public class LibrosResource {
 
 		return libros;
 	}
-	
-	
-	
+
 	private String GET_LIBROS_QUERY_BY_AUTHOR = "select lib.*, aut.name from libros lib, autor aut where lib.idAuthor=aut.id and lib.dateCreation < ifnull(?, now())  and aut.name=? order by dateCreation desc limit ?";
 	private String GET_LIBROS_QUERY_BY_AUTHOR_FROM_LAST = "select lib.*, aut.name from libros lib, autor aut where lib.idAuthor=aut.id and lib.dateCreation > ? and aut.name=? order by dateCreation desc";
-	
+
 	private String GET_LIBROS_QUERY_BY_TITLE = "select lib.*, aut.name from libros lib, autor aut where lib.idAuthor=aut.id and lib.dateCreation < ifnull(?, now())  and lib.title=? order by dateCreation desc limit ?";
 	private String GET_LIBROS_QUERY_BY_TITLE_FROM_LAST = "select lib.*, aut.name from libros lib, autor aut where lib.idAuthor=aut.id and lib.dateCreation > ? and lib.title=? order by dateCreation desc";
-	
+
 	@GET
 	@Path("/search")
 	@Produces(MediaType.URTASUN_API_LIBROS_COLLECTION)
-	public LibrosCollection getLibrosParameters(@QueryParam("author") String authorname, @QueryParam("title") String titlename, @QueryParam("length") int length,@QueryParam("before") long before, @QueryParam("after") long after) {
+	public LibrosCollection getLibrosParameters(
+			@QueryParam("author") String authorname,
+			@QueryParam("title") String titlename,
+			@QueryParam("length") int length,
+			@QueryParam("before") long before, @QueryParam("after") long after) {
 		LibrosCollection libros = new LibrosCollection();
 		Connection conn = null;
 		try {
@@ -144,8 +147,10 @@ public class LibrosResource {
 		try {
 			boolean updateFromLast = after > 0;
 			boolean whichstmt = authorname != null;
-			if (whichstmt){
-				stmt = updateFromLast ? conn.prepareStatement(GET_LIBROS_QUERY_BY_AUTHOR_FROM_LAST) : conn.prepareStatement(GET_LIBROS_QUERY_BY_AUTHOR);
+			if (whichstmt) {
+				stmt = updateFromLast ? conn
+						.prepareStatement(GET_LIBROS_QUERY_BY_AUTHOR_FROM_LAST)
+						: conn.prepareStatement(GET_LIBROS_QUERY_BY_AUTHOR);
 				if (updateFromLast) {
 					stmt.setTimestamp(1, new Timestamp(after));
 				} else {
@@ -153,13 +158,17 @@ public class LibrosResource {
 						stmt.setTimestamp(1, new Timestamp(before));
 					else
 						stmt.setTimestamp(1, null);
-					length = (length <= 0) ? 5 : length;// si lenght menor a 0 coge valor a 5 sino coge valor por defecto de lenght
+					length = (length <= 0) ? 5 : length;// si lenght menor a 0
+														// coge valor a 5 sino
+														// coge valor por
+														// defecto de lenght
 					stmt.setInt(3, length);
 				}
 				stmt.setString(2, authorname);
-			}
-			else{
-				stmt = updateFromLast ? conn.prepareStatement(GET_LIBROS_QUERY_BY_TITLE_FROM_LAST) : conn.prepareStatement(GET_LIBROS_QUERY_BY_TITLE);
+			} else {
+				stmt = updateFromLast ? conn
+						.prepareStatement(GET_LIBROS_QUERY_BY_TITLE_FROM_LAST)
+						: conn.prepareStatement(GET_LIBROS_QUERY_BY_TITLE);
 				if (updateFromLast) {
 					stmt.setTimestamp(1, new Timestamp(after));
 				} else {
@@ -167,7 +176,10 @@ public class LibrosResource {
 						stmt.setTimestamp(1, new Timestamp(before));
 					else
 						stmt.setTimestamp(1, null);
-					length = (length <= 0) ? 5 : length;// si lenght menor a 0 coge valor a 5 sino coge valor por defecto de lenght
+					length = (length <= 0) ? 5 : length;// si lenght menor a 0
+														// coge valor a 5 sino
+														// coge valor por
+														// defecto de lenght
 					stmt.setInt(3, length);
 				}
 				stmt.setString(2, titlename);
@@ -208,57 +220,80 @@ public class LibrosResource {
 
 		return libros;
 	}
-	
+
 	private String GET_LIBRO_QUERY = "select lib.*,aut.name from libros lib, autor aut where lib.idAuthor=aut.id and libroid=?";
-	
-	
+
+	/*
+	 * @GET
+	 * 
+	 * @Path("/{libroid}")
+	 * 
+	 * @Produces(MediaType.URTASUN_API_LIBROS) public Libros
+	 * getLibro(@PathParam("libroid") String libroid) { Libros libro = new
+	 * Libros();
+	 * 
+	 * Connection conn = null; try { conn = ds.getConnection(); } catch
+	 * (SQLException e) { throw new
+	 * ServerErrorException("Could not connect to the database",
+	 * Response.Status.SERVICE_UNAVAILABLE); }
+	 * 
+	 * PreparedStatement stmt = null; try { stmt
+	 * =conn.prepareStatement(GET_LIBRO_QUERY); stmt.setString(1, libroid);
+	 * ResultSet rs = stmt.executeQuery(); while (rs.next()) {
+	 * libro.setAutor(rs.getString("name"));
+	 * libro.setLibroid(rs.getInt("libroid"));
+	 * libro.setIdautor(rs.getInt("idAuthor"));
+	 * libro.setDateCreation(rs.getLong("DateCreation"));
+	 * libro.setDateImpresion(rs.getLong("DateImpresion"));
+	 * libro.setEdition(rs.getString("edition"));
+	 * libro.setEditorial(rs.getString("editorial"));
+	 * libro.setLanguage(rs.getString("language"));
+	 * libro.setTitle(rs.getString("title"));
+	 * 
+	 * } } catch (SQLException e) { throw new
+	 * ServerErrorException(e.getMessage(),
+	 * Response.Status.INTERNAL_SERVER_ERROR); } finally { try { if (stmt !=
+	 * null) stmt.close(); conn.close(); } catch (SQLException e) { } }
+	 * 
+	 * return libro;
+	 * 
+	 * }
+	 */
+
 	@GET
 	@Path("/{libroid}")
 	@Produces(MediaType.URTASUN_API_LIBROS)
-	public Libros getLibro(@PathParam("libroid") String libroid) {
-		Libros libro = new Libros();
+	public Response getLibro(@PathParam("libroid") String idlibro,
+			@Context Request request) {
+		// Create CacheControl
+		CacheControl cc = new CacheControl();
 
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			throw new ServerErrorException("Could not connect to the database",
-					Response.Status.SERVICE_UNAVAILABLE);
+		Libros libro = getLibroFromDatabase(idlibro);
+
+		// Calculate the ETag on hashing libro model attributes that can be updated
+		String librost = libro.getAutor() + libro.getDateCreation()
+				+ libro.getDateImpresion() + libro.getEdition()
+				+ libro.getEditorial();
+		String hash = DigestUtils.md5Hex(librost);
+		EntityTag eTag = new EntityTag(hash);
+
+		// Verify if it matched with etag available in http request
+		Response.ResponseBuilder rb = request.evaluatePreconditions(eTag);
+
+		// If ETag matches the rb will be non-null;
+		// Use the rb to return the response without any further processing
+		if (rb != null) {
+			return rb.cacheControl(cc).tag(eTag).build();
 		}
 
-		PreparedStatement stmt = null;
-		try {
-			stmt =conn.prepareStatement(GET_LIBRO_QUERY);
-			stmt.setString(1, libroid);
-			ResultSet rs = stmt.executeQuery();
-			while (rs.next()) {
-				libro.setAutor(rs.getString("name"));
-				libro.setLibroid(rs.getInt("libroid"));
-				libro.setIdautor(rs.getInt("idAuthor"));
-				libro.setDateCreation(rs.getLong("DateCreation"));
-				libro.setDateImpresion(rs.getLong("DateImpresion"));
-				libro.setEdition(rs.getString("edition"));
-				libro.setEditorial(rs.getString("editorial"));
-				libro.setLanguage(rs.getString("language"));
-				libro.setTitle(rs.getString("title"));
-				
-			}
-		} catch (SQLException e) {
-			throw new ServerErrorException(e.getMessage(),
-					Response.Status.INTERNAL_SERVER_ERROR);
-		} finally {
-			try {
-				if (stmt != null)
-					stmt.close();
-				conn.close();
-			} catch (SQLException e) {
-			}
-		}
+		// If rb is null then either it is first time request; or resource is
+		// modified
+		// Get the updated representation and return with Etag attached to it
+		rb = Response.ok(libro).cacheControl(cc).tag(eTag);
 
-		return libro;
-		
+		return rb.build();
 	}
-	
+
 	private String INSERT_AUTHOR_QUERY = "insert into libros (title, idauthor, language, edition, editorial) values (?,?,?,?,?)";
 
 	@POST
@@ -286,17 +321,22 @@ public class LibrosResource {
 			stmt.setString(3, libro.getLanguage());
 			stmt.setString(4, libro.getEdition());
 			stmt.setString(5, libro.getEditorial());
-			
+
 			stmt.executeUpdate();
 			ResultSet rs = stmt.getGeneratedKeys();
 			if (rs.next()) {
 				int idlibro = rs.getInt(1);
 				libro = getLibroFromDatabase(Integer.toString(idlibro));
-				System.out.println("idautor del nuevo libro: "+ libro.getIdautor());
-				System.out.println("Titulo del nuevo libro: "+ libro.getTitle());
-				System.out.println("Idioma del nuevo libro: "+ libro.getLanguage());
-				System.out.println("Edicion del nuevo libro: "+ libro.getEdition());
-				System.out.println("Editorial del nuevo libro: "+ libro.getEditorial());
+				System.out.println("idautor del nuevo libro: "
+						+ libro.getIdautor());
+				System.out.println("Titulo del nuevo libro: "
+						+ libro.getTitle());
+				System.out.println("Idioma del nuevo libro: "
+						+ libro.getLanguage());
+				System.out.println("Edicion del nuevo libro: "
+						+ libro.getEdition());
+				System.out.println("Editorial del nuevo libro: "
+						+ libro.getEditorial());
 			}
 		} catch (SQLException e) {
 			throw new ServerErrorException(e.getMessage(),
@@ -311,8 +351,7 @@ public class LibrosResource {
 		}
 		return libro;
 	}
-	
-	
+
 	private String UPDATE_LIBRO_QUERY = "update libros set language=ifnull(?, language), edition=ifnull(?, edition), editorial=ifnull(?, editorial) where libroid=?";
 
 	@PUT
@@ -331,7 +370,6 @@ public class LibrosResource {
 					Response.Status.SERVICE_UNAVAILABLE);
 		}
 
-		
 		PreparedStatement stmt = null;
 		try {
 			stmt = conn.prepareStatement(UPDATE_LIBRO_QUERY);
@@ -341,11 +379,14 @@ public class LibrosResource {
 			stmt.setString(4, idlibro);
 
 			int rows = stmt.executeUpdate();
-			if (rows == 1){
+			if (rows == 1) {
 				libro = getLibroFromDatabase(idlibro);
-				System.out.println("Libro con titulo: "+ libro.getTitle() +" en: "+libro.getLanguage()+" editado por: "+libro.getEditorial()+" en su "+libro.getEdition()+" edition, ha sido actualizado.");
+				System.out.println("Libro con titulo: " + libro.getTitle()
+						+ " en: " + libro.getLanguage() + " editado por: "
+						+ libro.getEditorial() + " en su " + libro.getEdition()
+						+ " edition, ha sido actualizado.");
 			}
-			
+
 			else {
 				throw new NotFoundException("No existe ningun libro con id="
 						+ idlibro);
@@ -365,8 +406,7 @@ public class LibrosResource {
 
 		return libro;
 	}
-	
-	
+
 	private String DELETE_LIBROS_QUERY = "delete from libros where libroid=?";
 
 	@DELETE
@@ -381,8 +421,8 @@ public class LibrosResource {
 			throw new ServerErrorException("Could not connect to the database",
 					Response.Status.SERVICE_UNAVAILABLE);
 		}
-		
-		Libros libro = new Libros ();
+
+		Libros libro = new Libros();
 		libro = getLibroFromDatabase(idlibro);
 		PreparedStatement stmt = null;
 		try {
@@ -390,9 +430,10 @@ public class LibrosResource {
 			stmt.setInt(1, Integer.valueOf(idlibro));
 
 			int rows = stmt.executeUpdate();
-			
-			System.out.println("Libro con nombre: "+ libro.getTitle() +" y id: "+libro.getLibroid()+" borrados.");
-			
+
+			System.out.println("Libro con nombre: " + libro.getTitle()
+					+ " y id: " + libro.getLibroid() + " borrados.");
+
 			if (rows == 0)
 				;// Deleting inexistent sting
 		} catch (SQLException e) {
@@ -407,8 +448,7 @@ public class LibrosResource {
 			}
 		}
 	}
-	
-	
+
 	private String GET_LIBRO_BY_ID_QUERY = "select lib.*,aut.name from libros lib, autor aut where lib.idAuthor=aut.id and libroid=?";
 
 	private Libros getLibroFromDatabase(String idlibro) { // GET AUTHOR DATABASE
@@ -432,8 +472,9 @@ public class LibrosResource {
 				libro.setAutor(rs.getString("name"));
 				libro.setLibroid(rs.getInt("libroid"));
 				libro.setIdautor(rs.getInt("idAuthor"));
-				libro.setDateCreation(rs.getLong("DateCreation"));
-				libro.setDateImpresion(rs.getLong("DateImpresion"));
+				libro.setDateCreation(rs.getTimestamp("DateCreation").getTime());
+				libro.setDateImpresion(rs.getTimestamp("DateImpresion")
+						.getTime());
 				libro.setEdition(rs.getString("edition"));
 				libro.setEditorial(rs.getString("editorial"));
 				libro.setLanguage(rs.getString("language"));
@@ -453,12 +494,11 @@ public class LibrosResource {
 		return libro;
 
 	}
-	
+
 	private String GET_ID_AUTOR_REGISTADO = "select name from autor where id=?";
 
-	
-	private Boolean buscarAutorRegistrado(String idAutor){
-		
+	private Boolean buscarAutorRegistrado(String idAutor) {
+
 		Boolean bool;
 		Connection conn = null;
 		try {
@@ -467,7 +507,7 @@ public class LibrosResource {
 			throw new ServerErrorException("Could not connect to the database",
 					Response.Status.SERVICE_UNAVAILABLE);
 		}
-		
+
 		PreparedStatement stmt = null;
 		try {
 			stmt = conn.prepareStatement(GET_ID_AUTOR_REGISTADO);
@@ -476,8 +516,7 @@ public class LibrosResource {
 			if (rs.next()) {
 				bool = true;
 				System.out.println("el autor existe");
-			}
-			else {
+			} else {
 				bool = false;
 				System.out.println("el autor NO existe");
 			}
@@ -492,33 +531,33 @@ public class LibrosResource {
 			} catch (SQLException e) {
 			}
 		}
-		
-		
-		
-		System.out.println("return "+ bool);
+
+		System.out.println("return " + bool);
 
 		return bool;
 	}
-		
+
 	/*
-	 * RESEÑASSS
-	 * -------------------------------------------
+	 * RESEÑASSS -------------------------------------------
 	 */
-	
+
 	String INSERT_REVIEW_QUERY = "insert into review(idlibro,username,name,reviewtext) values (?,?,?,?)";
-	
+
 	@POST
 	@Path("/review/{libroid}")
 	@Consumes(MediaType.URTASUN_API_LIBROS)
 	@Produces(MediaType.URTASUN_API_LIBROS)
-	public Review createReview( @PathParam ("libroid") String idlibro, Review review) { // CREATE REVIEW
+	public Review createReview(@PathParam("libroid") String idlibro,
+			Review review) { // CREATE REVIEW
 		System.out.println("Creando reseña....");
-		System.out.println("libroid..."+idlibro);
-		System.out.println("username "+security.getUserPrincipal().getName());
-		System.out.println("name "+getNameOfUsername(security.getUserPrincipal().getName()));
-		System.out.println("reseña "+review.getReviewtext());
+		System.out.println("libroid..." + idlibro);
+		System.out.println("username " + security.getUserPrincipal().getName());
+		System.out.println("name "
+				+ getNameOfUsername(security.getUserPrincipal().getName()));
+		System.out.println("reseña " + review.getReviewtext());
 		validateUserOfBook(idlibro);
-		validateOneReviewPerUser(security.getUserPrincipal().getName(),Integer.valueOf(idlibro));
+		validateOneReviewPerUser(security.getUserPrincipal().getName(),
+				Integer.valueOf(idlibro));
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
@@ -528,24 +567,25 @@ public class LibrosResource {
 		}
 
 		PreparedStatement stmt = null;
-		
-			try {
-					stmt = conn.prepareStatement(INSERT_REVIEW_QUERY,
-							Statement.RETURN_GENERATED_KEYS);
-		
-					stmt.setString(1, idlibro);
-					stmt.setString(2, security.getUserPrincipal().getName());
-					stmt.setString(3, getNameOfUsername(security.getUserPrincipal().getName()));
-					stmt.setString(4, review.getReviewtext());
-					
-					stmt.executeUpdate();
-					ResultSet rs = stmt.getGeneratedKeys();
-					if (rs.next()) {
-						
-						review = getReviewFromDatabase(idlibro);
-					
-				}
-			
+
+		try {
+			stmt = conn.prepareStatement(INSERT_REVIEW_QUERY,
+					Statement.RETURN_GENERATED_KEYS);
+
+			stmt.setString(1, idlibro);
+			stmt.setString(2, security.getUserPrincipal().getName());
+			stmt.setString(3, getNameOfUsername(security.getUserPrincipal()
+					.getName()));
+			stmt.setString(4, review.getReviewtext());
+
+			stmt.executeUpdate();
+			ResultSet rs = stmt.getGeneratedKeys();
+			if (rs.next()) {
+
+				review = getReviewFromDatabase(idlibro);
+
+			}
+
 		} catch (SQLException e) {
 			throw new ServerErrorException(e.getMessage(),
 					Response.Status.INTERNAL_SERVER_ERROR);
@@ -559,14 +599,15 @@ public class LibrosResource {
 		}
 		return review;
 	}
-	
+
 	private String UPDATE_REVIEW_QUERY = "update review set reviewtext=ifnull(?, reviewtext) where idreview=?";
 
 	@PUT
 	@Path("/review/{libroid}/{reviewid}")
 	@Consumes(MediaType.URTASUN_API_LIBROS)
 	@Produces(MediaType.URTASUN_API_LIBROS)
-	public Review updatereview(@PathParam("libroid") String idlibro, @PathParam("reviewid") String idReview, Review Review) { // UPDATE
+	public Review updatereview(@PathParam("libroid") String idlibro,
+			@PathParam("reviewid") String idReview, Review Review) { // UPDATE
 		System.out.println("Actualizando Review....");
 		validateUserOfBook(idlibro);
 		Connection conn = null;
@@ -577,21 +618,19 @@ public class LibrosResource {
 					Response.Status.SERVICE_UNAVAILABLE);
 		}
 
-		
 		PreparedStatement stmt = null;
 		try {
 			stmt = conn.prepareStatement(UPDATE_REVIEW_QUERY);
 			stmt.setString(1, Review.getReviewtext());
 			stmt.setInt(2, Integer.valueOf(idReview));
 
-			
-
 			int rows = stmt.executeUpdate();
-			if (rows == 1){
+			if (rows == 1) {
 				Review = getReviewFromDatabase(idReview);
-				System.out.println("Reseña con id: "+ Review.getIdReview() +" ha sido actualizada.");
+				System.out.println("Reseña con id: " + Review.getIdReview()
+						+ " ha sido actualizada.");
 			}
-			
+
 			else {
 				throw new NotFoundException("No existe ningun libro con id="
 						+ idlibro);
@@ -611,17 +650,17 @@ public class LibrosResource {
 
 		return Review;
 	}
-	
-	
+
 	private String DELETE_REVIEW_QUERY = "delete from review where idreview=?";
 
 	@DELETE
 	@Path("/review/{libroid}/{reviewid}")
-	public void deleteReview(@PathParam("libroid") String idlibro, @PathParam("reviewid") String idReview) { // DELETE
+	public void deleteReview(@PathParam("libroid") String idlibro,
+			@PathParam("reviewid") String idReview) { // DELETE
 		System.out.println("Borrando Libro....");
-		
+
 		validateUserAndAdmin(idlibro);
-			
+
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
@@ -629,8 +668,8 @@ public class LibrosResource {
 			throw new ServerErrorException("Could not connect to the database",
 					Response.Status.SERVICE_UNAVAILABLE);
 		}
-		
-		Review review = new Review ();
+
+		Review review = new Review();
 		review = getReviewFromDatabase(idReview);
 		PreparedStatement stmt = null;
 		try {
@@ -638,9 +677,10 @@ public class LibrosResource {
 			stmt.setInt(1, Integer.valueOf(idReview));
 
 			int rows = stmt.executeUpdate();
-			
-			System.out.println("Review/s con el id del libro: "+ review.getIdReview()+" borrados.");
-			
+
+			System.out.println("Review/s con el id del libro: "
+					+ review.getIdReview() + " borrados.");
+
 			if (rows == 0)
 				;// Deleting inexistent sting
 		} catch (SQLException e) {
@@ -655,10 +695,11 @@ public class LibrosResource {
 			}
 		}
 	}
-	
+
 	private String GET_REVIEW_BY_IDREVIEW = "select * from review where idreview=?";
 
-	private Review getReviewFromDatabase(String idReview) { // GET Review DATABASE
+	private Review getReviewFromDatabase(String idReview) { // GET Review
+															// DATABASE
 
 		Review review = new Review();
 
@@ -681,7 +722,8 @@ public class LibrosResource {
 				review.setUsernameReviewer(rs.getString("username"));
 				review.setNameReviewer(rs.getString("name"));
 				review.setReviewtext(rs.getString("reviewtext"));
-				review.setLastModified(rs.getTimestamp("lastmodified").getTime());
+				review.setLastModified(rs.getTimestamp("lastmodified")
+						.getTime());
 			}
 		} catch (SQLException e) {
 			throw new ServerErrorException(e.getMessage(),
@@ -697,11 +739,11 @@ public class LibrosResource {
 		return review;
 
 	}
-	
+
 	private String GET_NAME_BY_USERNAME = "select name from review where username=?";
-	
-	private String getNameOfUsername(String username){
-		
+
+	private String getNameOfUsername(String username) {
+
 		String Name = null;
 		Connection conn = null;
 		try {
@@ -730,14 +772,14 @@ public class LibrosResource {
 			} catch (SQLException e) {
 			}
 		}
-		System.out.println("return "+Name);
+		System.out.println("return " + Name);
 		return Name;
 	}
-	
+
 	private String GET_NUM_OF_TIMES_USED = "select * from review where username=? and idlibro=?";
 
-	private Boolean validateOnetimePerUser(String username, int idlibro){
-		
+	private Boolean validateOnetimePerUser(String username, int idlibro) {
+
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
@@ -752,16 +794,16 @@ public class LibrosResource {
 			stmt = conn.prepareStatement(GET_NUM_OF_TIMES_USED);
 			stmt.setString(1, username);
 			stmt.setInt(2, idlibro);
-			System.out.println("meto en la base de datos ---" + username +"----"+ idlibro);
+			System.out.println("meto en la base de datos ---" + username
+					+ "----" + idlibro);
 			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
 				count++;
 			}
-			System.out.println("count == "+count);
-			if(count<2){
+			System.out.println("count == " + count);
+			if (count == 0) {
 				turn = true;
-			}
-			else{
+			} else {
 				turn = false;
 			}
 		} catch (SQLException e) {
@@ -775,48 +817,53 @@ public class LibrosResource {
 			} catch (SQLException e) {
 			}
 		}
-		System.out.println("return "+ turn);
-		return turn;		
+		System.out.println("return " + turn);
+		return turn;
 	}
 
-	
 	/*
-	 * VALIDATES
-	 * -------------------------------------------
+	 * VALIDATES -------------------------------------------
 	 */
-	
-	
-	private void validateAutorRegistered(String idAutor){ //VALIDATE AUTOR REGISTERED
-		if (buscarAutorRegistrado(idAutor)==false)
-			throw new ForbiddenException("El autor de ese libro no esta registado");
+
+	private void validateAutorRegistered(String idAutor) { // VALIDATE AUTOR
+															// REGISTERED
+		if (buscarAutorRegistrado(idAutor) == false)
+			throw new ForbiddenException(
+					"El autor de ese libro no esta registado");
 	}
+
 	private void validateAdmin() { // VALIDATE ADMIN
 		if (!security.isUserInRole("administrator"))
 			throw new ForbiddenException("This function is only for admins.");
 
 	}
-	
-	private void validateOneReviewPerUser(String username, int idlibro){ //VALIDATE AUTOR REGISTERED
-		if (validateOnetimePerUser(username,idlibro)==false)
-			throw new ForbiddenException("Solo puedes crear una reseña por libro i persona registrada");
-	}
-	private void validateUserOfBook(String idLibro){//VALIDATEUSEROFBOOK
-		Libros libro = getLibroFromDatabase(idLibro);
-	    String autorlibro = libro.getAutor();
-	    System.out.println("id -->"+idLibro+"comparo "+ autorlibro +" y "+ security.getUserPrincipal().getName());
-	    		if (!security.getUserPrincipal().getName()
-				.equals(autorlibro))
+
+	private void validateOneReviewPerUser(String username, int idlibro) { // VALIDATE
+																			// AUTOR
+																			// REGISTERED
+		if (validateOnetimePerUser(username, idlibro) == false)
 			throw new ForbiddenException(
-					"No eres el autor de este libro.");
-		
+					"Solo puedes crear una reseña por libro i persona registrada");
 	}
-	
-	private void validateUserAndAdmin(String idLibro){//VALIDATEADMIN&USER
+
+	private void validateUserOfBook(String idLibro) {// VALIDATEUSEROFBOOK
 		Libros libro = getLibroFromDatabase(idLibro);
-	    String autorlibro = libro.getAutor();
-	    System.out.println("id -->"+idLibro+"comparo "+ autorlibro +" y "+ security.getUserPrincipal().getName());
-		if (!security.getUserPrincipal().getName().equals(autorlibro)||!security.isUserInRole("administrator"))
+		String autorlibro = libro.getAutor();
+		System.out.println("id -->" + idLibro + "comparo " + autorlibro + " y "
+				+ security.getUserPrincipal().getName());
+		if (!security.getUserPrincipal().getName().equals(autorlibro))
+			throw new ForbiddenException("No eres el autor de este libro.");
+
+	}
+
+	private void validateUserAndAdmin(String idLibro) {// VALIDATEADMIN&USER
+		Libros libro = getLibroFromDatabase(idLibro);
+		String autorlibro = libro.getAutor();
+		System.out.println("id -->" + idLibro + "comparo " + autorlibro + " y "
+				+ security.getUserPrincipal().getName());
+		if (!(security.getUserPrincipal().getName().equals(autorlibro) || security
+				.isUserInRole("administrator")))
 			throw new ForbiddenException("No tienes permiso para borrar esto.");
-		
+
 	}
 }
