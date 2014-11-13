@@ -221,45 +221,6 @@ public class LibrosResource {
 		return libros;
 	}
 
-	private String GET_LIBRO_QUERY = "select lib.*,aut.name from libros lib, autor aut where lib.idAuthor=aut.id and libroid=?";
-
-	/*
-	 * @GET
-	 * 
-	 * @Path("/{libroid}")
-	 * 
-	 * @Produces(MediaType.URTASUN_API_LIBROS) public Libros
-	 * getLibro(@PathParam("libroid") String libroid) { Libros libro = new
-	 * Libros();
-	 * 
-	 * Connection conn = null; try { conn = ds.getConnection(); } catch
-	 * (SQLException e) { throw new
-	 * ServerErrorException("Could not connect to the database",
-	 * Response.Status.SERVICE_UNAVAILABLE); }
-	 * 
-	 * PreparedStatement stmt = null; try { stmt
-	 * =conn.prepareStatement(GET_LIBRO_QUERY); stmt.setString(1, libroid);
-	 * ResultSet rs = stmt.executeQuery(); while (rs.next()) {
-	 * libro.setAutor(rs.getString("name"));
-	 * libro.setLibroid(rs.getInt("libroid"));
-	 * libro.setIdautor(rs.getInt("idAuthor"));
-	 * libro.setDateCreation(rs.getLong("DateCreation"));
-	 * libro.setDateImpresion(rs.getLong("DateImpresion"));
-	 * libro.setEdition(rs.getString("edition"));
-	 * libro.setEditorial(rs.getString("editorial"));
-	 * libro.setLanguage(rs.getString("language"));
-	 * libro.setTitle(rs.getString("title"));
-	 * 
-	 * } } catch (SQLException e) { throw new
-	 * ServerErrorException(e.getMessage(),
-	 * Response.Status.INTERNAL_SERVER_ERROR); } finally { try { if (stmt !=
-	 * null) stmt.close(); conn.close(); } catch (SQLException e) { } }
-	 * 
-	 * return libro;
-	 * 
-	 * }
-	 */
-
 	@GET
 	@Path("/{libroid}")
 	@Produces(MediaType.URTASUN_API_LIBROS)
