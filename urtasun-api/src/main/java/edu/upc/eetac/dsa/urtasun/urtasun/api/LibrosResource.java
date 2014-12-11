@@ -34,6 +34,7 @@ import edu.upc.eetac.dsa.urtasun.urtasun.api.model.Author;
 import edu.upc.eetac.dsa.urtasun.urtasun.api.model.Libros;
 import edu.upc.eetac.dsa.urtasun.urtasun.api.model.LibrosCollection;
 import edu.upc.eetac.dsa.urtasun.urtasun.api.model.Review;
+import edu.upc.eetac.dsa.urtasun.urtasun.api.model.ReviewCollection;
 
 @Path("/libros")
 public class LibrosResource {
@@ -47,8 +48,8 @@ public class LibrosResource {
 	 * LIBROS -------------------------------------------
 	 */
 
-	private String GET_LIBROS_QUERY = "select lib.*, aut.name from libros lib, autor aut where lib.idAuthor=aut.id and lib.dateCreation < ifnull(?, now())  order by dateCreation desc limit ?";
-	private String GET_LIBROS_QUERY_FROM_LAST = "select lib.*, aut.name from libros lib, autor aut where lib.idAuthor=aut.id and lib.dateCreation > ? order by dateCreation desc";
+	private String GET_LIBROS_QUERY = "select lib.*, aut.name, rev.* from libros lib, autor aut, review rev where lib.idAuthor=aut.id and lib.libroid=rev.idlibro and lib.dateCreation < ifnull(?, now())  order by dateCreation desc limit ?";
+	private String GET_LIBROS_QUERY_FROM_LAST = " select lib.*, aut.name, rev.* from libros lib, autor aut, review rev where lib.idAuthor=aut.id and lib.libroid=rev.idlibro and lib.dateCreation > ? order by idlibro";
 
 	@GET
 	@Produces(MediaType.URTASUN_API_LIBROS_COLLECTION)
@@ -86,22 +87,44 @@ public class LibrosResource {
 			boolean first = true;
 			long oldestTimestamp = 0;
 			while (rs.next()) {
-				Libros libro = new Libros();
-				libro.setLibroid(rs.getInt("libroid"));
-				libro.setAutor(rs.getString("name"));
-				libro.setIdautor(rs.getInt("idAuthor"));
-				libro.setDateCreation(rs.getTimestamp("DateCreation").getTime());
-				oldestTimestamp = rs.getTimestamp("DateImpresion").getTime();
-				libro.setDateImpresion(oldestTimestamp);
-				libro.setEdition(rs.getString("edition"));
-				libro.setEditorial(rs.getString("editorial"));
-				libro.setLanguage(rs.getString("language"));
-				libro.setTitle(rs.getString("title"));
-				if (first) {
-					first = false;
-					libros.setNewestTimestamp(libro.getDateImpresion());
+				Libros libro;
+				if (libros.getLibro(rs.getInt("libroid"))==null){
+					
+				
+					libro = new Libros();
+					libro.setLibroid(rs.getInt("libroid"));
+					libro.setAutor(rs.getString("name"));
+					libro.setIdautor(rs.getInt("idAuthor"));
+					libro.setDateCreation(rs.getTimestamp("DateCreation").getTime());
+					oldestTimestamp = rs.getTimestamp("DateImpresion").getTime();
+					libro.setDateImpresion(oldestTimestamp);
+					libro.setEdition(rs.getString("edition"));
+					libro.setEditorial(rs.getString("editorial"));
+					libro.setLanguage(rs.getString("language"));
+					libro.setTitle(rs.getString("title"));
+					if (first) {
+						first = false;
+						libros.setNewestTimestamp(libro.getDateImpresion());
+					}
 				}
-				libros.addLibros(libro);
+				else{
+					
+					libro = libros.getLibro(rs.getInt("libroid"));
+					
+				}
+				
+				Review review = new Review();
+				review.setIdReview(rs.getInt("idreview"));		
+				review.setNameReviewer(rs.getString("name"));
+				review.setUsernameReviewer(rs.getString("username"));
+				review.setReviewtext(rs.getString("reviewtext"));
+				review.setLastModified(rs.getTimestamp("lastmodified").getTime());
+				review.setIdLibro(rs.getInt("idlibro"));
+				libro.addReview(review);
+				
+				if (libros.getLibro(rs.getInt("libroid"))==null){
+					libros.addLibros(libro);
+				}
 			}
 			libros.setOldestTimestamp(oldestTimestamp);
 		} catch (SQLException e) {
@@ -500,8 +523,126 @@ public class LibrosResource {
 
 	/*
 	 * RESEÑASSS -------------------------------------------
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
 	 */
 
+	
+String GET_REVIEW_QUERY = "select * from review order by idlibro";
+	
+	@GET
+	@Path("/review")
+	@Consumes(MediaType.URTASUN_API_LIBROS)
+	public ReviewCollection getReviewsAll(){
+		System.out.println("getreviews");
+		ReviewCollection reviews = new ReviewCollection();
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();
+		} catch (SQLException e) {
+			throw new ServerErrorException("Could not connect to the database",
+					Response.Status.SERVICE_UNAVAILABLE);
+		}
+		PreparedStatement stmt = null;
+
+		try {
+			stmt = conn.prepareStatement(GET_REVIEW_QUERY,
+					Statement.RETURN_GENERATED_KEYS);
+			ResultSet rs = stmt.executeQuery();
+			
+			while (rs.next()){
+				Review review = new Review();
+				review.setIdLibro(rs.getInt("idlibro"));
+				review.setIdReview(rs.getInt("idreview"));
+				review.setLastModified(rs.getTimestamp("lastmodified").getTime());
+				review.setNameReviewer(rs.getString("name"));
+				review.setReviewtext(rs.getString("reviewtext"));
+				review.setUsernameReviewer(rs.getString("username"));
+				
+				
+				reviews.addReview(review);
+			}
+			
+		
+	} catch (SQLException e) {
+		throw new ServerErrorException(e.getMessage(),
+				Response.Status.INTERNAL_SERVER_ERROR);
+	} finally {
+		try {
+			if (stmt != null)
+				stmt.close();
+			conn.close();
+		} catch (SQLException e) {
+		}
+	}
+	return reviews;
+}
+	
+	
+	
+	String GET_REVIEW_QUERY_FROM_ID = "select * from review where idlibro=?";
+	
+	@GET
+	@Path("/review/{libroid}")
+	@Consumes(MediaType.URTASUN_API_LIBROS)
+	public ReviewCollection getReviews(@PathParam("libroid") String idlibro){
+		System.out.println("getreviews");
+		ReviewCollection reviews = new ReviewCollection();
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();
+		} catch (SQLException e) {
+			throw new ServerErrorException("Could not connect to the database",
+					Response.Status.SERVICE_UNAVAILABLE);
+		}
+		PreparedStatement stmt = null;
+
+		try {
+			stmt = conn.prepareStatement(GET_REVIEW_QUERY_FROM_ID,
+					Statement.RETURN_GENERATED_KEYS);
+			stmt.setString(1, idlibro);
+			ResultSet rs = stmt.executeQuery();
+			
+			while (rs.next()){
+				Review review = new Review();
+				review.setIdLibro(rs.getInt("idlibro"));
+				review.setIdReview(rs.getInt("idreview"));
+				review.setLastModified(rs.getTimestamp("lastmodified").getTime());
+				review.setNameReviewer(rs.getString("name"));
+				review.setReviewtext(rs.getString("reviewtext"));
+				review.setUsernameReviewer(rs.getString("username"));
+				
+				
+				reviews.addReview(review);
+			}
+			
+		
+	} catch (SQLException e) {
+		throw new ServerErrorException(e.getMessage(),
+				Response.Status.INTERNAL_SERVER_ERROR);
+	} finally {
+		try {
+			if (stmt != null)
+				stmt.close();
+			conn.close();
+		} catch (SQLException e) {
+		}
+	}
+	return reviews;
+}
+		
+	
+	
+	
+	
+	
 	String INSERT_REVIEW_QUERY = "insert into review(idlibro,username,name,reviewtext) values (?,?,?,?)";
 
 	@POST

@@ -1,5 +1,6 @@
 package edu.upc.eetac.dsa.urtasun.urtasun.api.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.core.Link;
@@ -18,7 +19,9 @@ public class Libros {
 	
 	@InjectLinks({
 		@InjectLink(resource = LibrosResource.class, style = Style.ABSOLUTE, rel = "libros", title = "Consulta ultimos libros", type = MediaType.URTASUN_API_LIBROS_COLLECTION),
-		@InjectLink(resource = LibrosResource.class, style = Style.ABSOLUTE, rel = "self edit", title = "Accede a este libro", type = MediaType.URTASUN_API_LIBROS, method = "getLibro", bindings = @Binding(name = "libroid", value = "${instance.libroid}")) })
+		@InjectLink(resource = LibrosResource.class, style = Style.ABSOLUTE, rel = "self edit", title = "Accede a este libro", type = MediaType.URTASUN_API_LIBROS, method = "getLibro", bindings = @Binding(name = "libroid", value = "${instance.libroid}")),
+		@InjectLink(value = "/libros/reviews/{idlibro}", style = Style.ABSOLUTE, rel = "focus", title = "Reviews Libro", type = MediaType.URTASUN_API_LIBROS, bindings = { @Binding(name = "idlibro", value = "${instance.libroid}") }) })//$-->toda {}--> valor deseado
+
 	private List<Link> links;
 	private int libroid;
 	private String title;
@@ -29,6 +32,24 @@ public class Libros {
 	private long dateCreation;
 	private long dateImpresion;
 	private String Editorial;
+	private List<Review> reviews;
+	
+	
+	public Libros() {
+		super();
+		reviews = new ArrayList<>();
+	}	
+	public void addReview(Review review){
+		reviews.add(review);
+	}
+	
+	
+	public List<Review> getReviews() {
+		return reviews;
+	}
+	public void setReviews(List<Review> reviews) {
+		this.reviews = reviews;
+	}
 	public int getLibroid() {
 		return libroid;
 	}

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">AndroidLibros</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="list_reviews">Reviews</string>
+
+
+
+    <string name="login_l_username">Username</string>
+    <string name="login_l_password">Password</string>
+    <string name="login_l_signin">Sign in</string>
+    <string name="login_l_register">Register in Libros</string>
+
+
+</resources>
