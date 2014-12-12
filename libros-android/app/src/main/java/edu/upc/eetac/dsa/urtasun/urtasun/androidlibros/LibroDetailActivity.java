@@ -44,9 +44,6 @@ public class LibroDetailActivity extends Activity {
         TextView tvDetaliD = (TextView) findViewById(R.id.tvDetailiD);
 
 
-
-
-
         tvDetailTitle.setText("Titulo: "+libro.getTitle());
         tvDetailEditorial.setText("Editorial: "+libro.getEditorial());
         tvDetailAutor.setText("Autor: "+libro.getAutor());

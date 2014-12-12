@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import java.net.Authenticator;
@@ -28,32 +29,32 @@ import edu.upc.eetac.dsa.urtasun.urtasun.androidlibros.api.ReviewCollection;
 public class ReviewsActivity extends ListActivity {
 
     private ArrayList<Review> reviewslist;
-    private ReviewAdapter adapter;
 
 
     private final static String TAG = ReviewsActivity.class.toString();
 
 
+    private ArrayAdapter<String> adapter;
+
+    /** Called when the activity is first created. */
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reviews);
-
-        reviewslist = new ArrayList<Review>();
-        adapter = new ReviewAdapter(this, reviewslist);
-        setListAdapter(adapter);
-
-        (new FetchReviewsTask()).execute();
+        String urlReview = (String) getIntent().getExtras().get("url");
+        (new FetchReviewsTask()).execute(urlReview);
     }
 
 
 
+
+
     private class FetchReviewsTask extends
-            AsyncTask<Void, Void, ReviewCollection> {
+            AsyncTask<String, Void, ReviewCollection> {
         private ProgressDialog pd;
 
         @Override
-        protected ReviewCollection doInBackground(Void... params) {
+        protected ReviewCollection doInBackground(String... params) {
             ReviewCollection reviews = null;
             try {
                 reviews = LibroAPI.getInstance(ReviewsActivity.this)
@@ -93,7 +94,6 @@ public class ReviewsActivity extends ListActivity {
 
     private void addReviews(ReviewCollection reviews) {
         reviewslist.addAll(reviews.getReviews());
-        adapter.notifyDataSetChanged();
     }
 
     @Override

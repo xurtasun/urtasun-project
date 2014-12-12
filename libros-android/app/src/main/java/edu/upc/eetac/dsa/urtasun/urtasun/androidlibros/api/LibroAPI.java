@@ -179,7 +179,7 @@ public class LibroAPI {
             JSONArray jsonLinks = jsonObject.getJSONArray("links");
             parseLinks(jsonLinks, reviews.getLinks());
             JSONArray jsonReviews = jsonObject.getJSONArray("reviews");
-            for (int i = 0; i < jsonReviews.length(); i++) {
+            for (int i = 0; i < 3; i++) {
                 Review review = new Review();
                 JSONObject jsonReview = jsonReviews.getJSONObject(i);
                 review.setIdLibro(jsonReview.getInt("idLibro"));
